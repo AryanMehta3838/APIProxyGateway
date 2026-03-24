@@ -63,6 +63,9 @@ func (c Config) Validate() error {
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
 		return errors.New("server.port must be between 1 and 65535")
 	}
+	if c.Redis.Enabled && strings.TrimSpace(c.Redis.Addr) == "" {
+		return errors.New("redis.addr must not be empty when redis.enabled is true")
+	}
 
 	for i, route := range c.Routes {
 		if route.Name == "" {

@@ -53,6 +53,37 @@ The gateway should return `X-Request-ID` on the response. When you provide one, 
 
 Rate limiting is available per route through the `rate_limit` config block. Health endpoints are not rate limited.
 
+### Redis-backed rate limiting (T10)
+
+The dev config enables Redis-backed limiting:
+
+```yaml
+redis:
+  enabled: true
+  addr: localhost:6379
+```
+
+Start Redis with Docker:
+
+```bash
+docker run --rm -p 6379:6379 redis:7-alpine
+```
+
+Then run the gateway and upstream as above, and hit the limited route repeatedly:
+
+```bash
+for i in 1 2 3 4; do curl -s -o /dev/null -w "%{http_code}\n" "http://127.0.0.1:8080/api/echo/hello"; done
+```
+
+Expected with the current dev config (`requests: 3`): first three requests return `200`, fourth returns `429`.
+If Redis is down while Redis limiting is enabled, limited routes return `503`.
+
+You can also run all three services together:
+
+```bash
+docker compose -f deployments/docker-compose.yml up
+```
+
 ## Validate
 
 ```bash

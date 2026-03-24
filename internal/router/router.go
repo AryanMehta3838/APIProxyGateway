@@ -17,7 +17,10 @@ func New(cfg config.Config, adminHandler http.Handler) (http.Handler, error) {
 	router.Use(middleware.AccessLog)
 	router.Use(middleware.RequestID)
 	router.Mount("/", adminHandler)
-	limiter := ratelimit.NewInMemory()
+	limiter, err := buildLimiter(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, route := range cfg.Routes {
 		handler, err := proxy.New(route)
@@ -42,4 +45,27 @@ func New(cfg config.Config, adminHandler http.Handler) (http.Handler, error) {
 	}
 
 	return router, nil
+}
+
+func buildLimiter(cfg config.Config) (ratelimit.Limiter, error) {
+	needsLimiter := false
+	for _, route := range cfg.Routes {
+		if route.RateLimit.Enabled {
+			needsLimiter = true
+			break
+		}
+	}
+	if !needsLimiter {
+		return nil, nil
+	}
+
+	if cfg.Redis.Enabled {
+		limiter, err := ratelimit.NewRedis(cfg.Redis.Addr)
+		if err != nil {
+			return nil, fmt.Errorf("build redis limiter: %w", err)
+		}
+		return limiter, nil
+	}
+
+	return ratelimit.NewInMemory(), nil
 }

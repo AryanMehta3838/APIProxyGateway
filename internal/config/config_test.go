@@ -231,6 +231,32 @@ func TestValidateRouteRateLimitKeyStrategy(t *testing.T) {
 	}
 }
 
+func TestValidateRedisEnabledRequiresAddr(t *testing.T) {
+	cfg := Config{
+		Server: ServerConfig{Port: 8080},
+		Redis: RedisConfig{
+			Enabled: true,
+			Addr:    " ",
+		},
+		Routes: []Route{
+			{
+				Name:       "echo",
+				PathPrefix: "/api/echo",
+				Methods:    []string{"GET"},
+				Upstream:   "http://localhost:9091",
+			},
+		},
+	}
+
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if !strings.Contains(err.Error(), "redis.addr") {
+		t.Fatalf("expected redis.addr validation error, got %v", err)
+	}
+}
+
 func writeTempConfig(t *testing.T, content string) string {
 	t.Helper()
 
