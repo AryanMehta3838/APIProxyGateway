@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+
 	"github.com/aryan/apiproxy/internal/admin"
 	"github.com/aryan/apiproxy/internal/config"
 	"github.com/aryan/apiproxy/internal/middleware"
@@ -376,5 +378,176 @@ func TestNew_HealthzStaysExemptFromRateLimit(t *testing.T) {
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+}
+
+func TestNew_UsesRedisRateLimiterWhenEnabled(t *testing.T) {
+	t.Parallel()
+
+	redisServer := miniredis.RunT(t)
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler, err := New(config.Config{
+		Server: config.ServerConfig{Port: 8080},
+		Redis: config.RedisConfig{
+			Enabled: true,
+			Addr:    redisServer.Addr(),
+		},
+		Routes: []config.Route{
+			{
+				Name:       "echo",
+				PathPrefix: "/api/echo",
+				Methods:    []string{http.MethodGet},
+				Upstream:   upstream.URL,
+				RateLimit: config.RateLimitConfig{
+					Enabled:       true,
+					Requests:      1,
+					WindowSeconds: 60,
+					KeyStrategy:   "ip",
+				},
+			},
+		},
+	}, admin.NewRouter())
+	if err != nil {
+		t.Fatalf("new router: %v", err)
+	}
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	first, err := http.Get(server.URL + "/api/echo")
+	if err != nil {
+		t.Fatalf("first request: %v", err)
+	}
+	t.Cleanup(func() { _ = first.Body.Close() })
+	if first.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected first status %d, got %d", http.StatusNoContent, first.StatusCode)
+	}
+
+	second, err := http.Get(server.URL + "/api/echo")
+	if err != nil {
+		t.Fatalf("second request: %v", err)
+	}
+	t.Cleanup(func() { _ = second.Body.Close() })
+	if second.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("expected second status %d, got %d", http.StatusTooManyRequests, second.StatusCode)
+	}
+}
+
+func TestNew_RedisLimiterUnavailableReturns503(t *testing.T) {
+	t.Parallel()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler, err := New(config.Config{
+		Server: config.ServerConfig{Port: 8080},
+		Redis: config.RedisConfig{
+			Enabled: true,
+			Addr:    "127.0.0.1:1",
+		},
+		Routes: []config.Route{
+			{
+				Name:       "echo",
+				PathPrefix: "/api/echo",
+				Methods:    []string{http.MethodGet},
+				Upstream:   upstream.URL,
+				RateLimit: config.RateLimitConfig{
+					Enabled:       true,
+					Requests:      1,
+					WindowSeconds: 60,
+					KeyStrategy:   "ip",
+				},
+			},
+		},
+	}, admin.NewRouter())
+	if err != nil {
+		t.Fatalf("new router: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/echo", nil)
+	req.Header.Set(middleware.RequestIDHeader, "redis-down-test")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status %d, got %d", http.StatusServiceUnavailable, recorder.Code)
+	}
+	if got := recorder.Header().Get(middleware.RequestIDHeader); got != "redis-down-test" {
+		t.Fatalf("expected request id header %q, got %q", "redis-down-test", got)
+	}
+	if body := recorder.Body.String(); !strings.Contains(body, "rate limit backend unavailable") {
+		t.Fatalf("expected backend unavailable body, got %q", body)
+	}
+}
+
+func TestNew_RedisRateLimitSharedAcrossRouterInstances(t *testing.T) {
+	t.Parallel()
+
+	redisServer := miniredis.RunT(t)
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(upstream.Close)
+
+	cfg := config.Config{
+		Server: config.ServerConfig{Port: 8080},
+		Redis: config.RedisConfig{
+			Enabled: true,
+			Addr:    redisServer.Addr(),
+		},
+		Routes: []config.Route{
+			{
+				Name:       "echo",
+				PathPrefix: "/api/echo",
+				Methods:    []string{http.MethodGet},
+				Upstream:   upstream.URL,
+				RateLimit: config.RateLimitConfig{
+					Enabled:       true,
+					Requests:      1,
+					WindowSeconds: 60,
+					KeyStrategy:   "ip",
+				},
+			},
+		},
+	}
+
+	handlerA, err := New(cfg, admin.NewRouter())
+	if err != nil {
+		t.Fatalf("new router A: %v", err)
+	}
+	handlerB, err := New(cfg, admin.NewRouter())
+	if err != nil {
+		t.Fatalf("new router B: %v", err)
+	}
+
+	serverA := httptest.NewServer(handlerA)
+	t.Cleanup(serverA.Close)
+	serverB := httptest.NewServer(handlerB)
+	t.Cleanup(serverB.Close)
+
+	first, err := http.Get(serverA.URL + "/api/echo")
+	if err != nil {
+		t.Fatalf("first request: %v", err)
+	}
+	t.Cleanup(func() { _ = first.Body.Close() })
+	if first.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected first status %d, got %d", http.StatusNoContent, first.StatusCode)
+	}
+
+	second, err := http.Get(serverB.URL + "/api/echo")
+	if err != nil {
+		t.Fatalf("second request: %v", err)
+	}
+	t.Cleanup(func() { _ = second.Body.Close() })
+	if second.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("expected second status %d, got %d", http.StatusTooManyRequests, second.StatusCode)
 	}
 }

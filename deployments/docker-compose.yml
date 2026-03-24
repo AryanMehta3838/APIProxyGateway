@@ -1,0 +1,27 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+
+  echo-upstream:
+    image: golang:1.24-alpine
+    working_dir: /app
+    command: ["go", "run", "./examples/echo-upstream"]
+    volumes:
+      - ../:/app
+    ports:
+      - "9091:9091"
+
+  gateway:
+    image: golang:1.24-alpine
+    working_dir: /app
+    command: ["go", "run", "./cmd/gateway", "-config", "configs/gateway.dev.yaml"]
+    volumes:
+      - ../:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - echo-upstream

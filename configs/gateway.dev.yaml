@@ -2,7 +2,7 @@ server:
   port: 8080
 
 redis:
-  enabled: false
+  enabled: true
   addr: localhost:6379
 
 routes:
@@ -11,8 +11,8 @@ routes:
     strip_prefix: /api/echo
     timeout_ms: 3000
     rate_limit:
-      enabled: false
-      requests: 5
+      enabled: true
+      requests: 3
       window_seconds: 60
       key_strategy: ip
     methods:

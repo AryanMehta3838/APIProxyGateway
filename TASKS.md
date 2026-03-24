@@ -18,13 +18,13 @@
 ---
 
 ## Next pending task
-- **Task ID:** T10
-- **Title:** Redis-backed rate limiting
-- **Goal:** Add Redis-backed limiter behind the same policy shape.
-- **Why next:** The in-memory limiter proves the policy path locally; the next step is the distributed-backed implementation.
-- **Recommended tool:** Cursor Cloud Agent
+- **Task ID:** T11
+- **Title:** Metrics endpoint
+- **Goal:** Expose request count, latency, status, and rate-limit metrics.
+- **Why next:** With Redis-backed limits in place, the next operational gap is visibility into request and throttle behavior.
+- **Recommended tool:** Codex local
 - **Recommended effort:** medium
-- **Human review required after completion:** yes (Stop point D review should happen before continuing)
+- **Human review required after completion:** no
 
 ---
 
@@ -188,7 +188,7 @@ Human review:
 - rate-limit config is readable
 - no distributed concerns leaked into base design
 
-## [ ] T10 — Redis-backed rate limiting
+## [x] T10 — Redis-backed rate limiting
 - **Goal:** Add Redis-backed limiter behind the same policy shape.
 - **Files likely involved:**
   - `internal/ratelimit/*`
