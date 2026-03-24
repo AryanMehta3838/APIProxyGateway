@@ -1,9 +1,11 @@
+# Stack profile for deployments/docker-compose.yml (Redis + echo + gateway).
+# For laptop-only demos without Docker Redis, use configs/gateway.dev.yaml instead.
 server:
   port: 8080
 
 redis:
-  enabled: false
-  addr: localhost:6379
+  enabled: true
+  addr: redis:6379
 
 routes:
   - name: echo
@@ -17,4 +19,4 @@ routes:
       key_strategy: ip
     methods:
       - GET
-    upstream: http://localhost:9091
+    upstream: http://echo-upstream:9091

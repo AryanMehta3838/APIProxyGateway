@@ -14,6 +14,7 @@ import (
 	"github.com/aryan/apiproxy/internal/admin"
 	"github.com/aryan/apiproxy/internal/config"
 	"github.com/aryan/apiproxy/internal/router"
+	"github.com/aryan/apiproxy/internal/telemetry"
 )
 
 func main() {
@@ -27,7 +28,8 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
-	handler, err := router.New(cfg, admin.NewRouter())
+	collector := telemetry.New()
+	handler, err := router.New(cfg, admin.NewRouterWithMetrics(collector.Handler(), cfg), collector)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "startup failed: %v\n", err)
 		os.Exit(1)

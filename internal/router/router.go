@@ -10,12 +10,16 @@ import (
 	"github.com/aryan/apiproxy/internal/middleware"
 	"github.com/aryan/apiproxy/internal/proxy"
 	"github.com/aryan/apiproxy/internal/ratelimit"
+	"github.com/aryan/apiproxy/internal/telemetry"
 )
 
-func New(cfg config.Config, adminHandler http.Handler) (http.Handler, error) {
+func New(cfg config.Config, adminHandler http.Handler, collector *telemetry.Collector) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(middleware.AccessLog)
 	router.Use(middleware.RequestID)
+	if collector != nil {
+		router.Use(middleware.Metrics(collector))
+	}
 	router.Mount("/", adminHandler)
 	limiter, err := buildLimiter(cfg)
 	if err != nil {

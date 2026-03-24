@@ -18,13 +18,13 @@
 ---
 
 ## Next pending task
-- **Task ID:** T11
-- **Title:** Metrics endpoint
-- **Goal:** Expose request count, latency, status, and rate-limit metrics.
-- **Why next:** With Redis-backed limits in place, the next operational gap is visibility into request and throttle behavior.
-- **Recommended tool:** Codex local
-- **Recommended effort:** medium
-- **Human review required after completion:** no
+- **Task ID:** T14
+- **Title:** PR review pass and bug sweep
+- **Goal:** Run a final bug-focused pass using agent review plus manual review.
+- **Why next:** Demo docs and smoke gate are in place; a closing review pass finishes the portfolio slice.
+- **Recommended tool:** Cursor Cloud Agent + Bugbot or Codex cloud review
+- **Recommended effort:** high
+- **Human review required after completion:** yes
 
 ---
 
@@ -200,11 +200,11 @@ Human review:
   - rate limits hold across repeated requests
   - clear behavior when Redis is down
 - **Done condition:** Gateway supports realistic multi-instance-ready rate limiting.
-- **Recommended tool:** Cursor Cloud Agent
+- **Recommended tool:** Cursor Local Agent
 - **Recommended effort:** medium
 - **Browser/user-style testing required:** yes
 
-## [ ] T11 — Metrics endpoint
+## [x] T11 — Metrics endpoint
 - **Goal:** Expose request count, latency, status, and rate-limit metrics.
 - **Files likely involved:**
   - `internal/telemetry/*`
@@ -219,7 +219,7 @@ Human review:
 - **Recommended effort:** medium
 - **Browser/user-style testing required:** yes
 
-## [ ] T12 — Route listing debug endpoint
+## [x] T12 — Route listing debug endpoint
 - **Goal:** Add a small debug endpoint that lists loaded routes and policies.
 - **Files likely involved:**
   - `internal/admin/*`
@@ -239,7 +239,7 @@ Human review:
 - debug output is useful but not risky
 - project is now impressive enough without adding complexity for its own sake
 
-## [ ] T13 — Demo flow + regression hardening
+## [x] T13 — Demo flow + regression hardening
 - **Goal:** Add a polished local demo flow, regression checks, and docs for reviewers.
 - **Files likely involved:**
   - `README.md`
@@ -264,6 +264,6 @@ Human review:
   - no obvious API inconsistencies
   - no dead code from earlier slices
 - **Done condition:** Codebase is ready for portfolio/demo use.
-- **Recommended tool:** Cursor Cloud Agent + Bugbot or Codex cloud review
+- **Recommended tool:** Codex
 - **Recommended effort:** high
 - **Browser/user-style testing required:** yes

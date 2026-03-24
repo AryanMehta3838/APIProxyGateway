@@ -23,12 +23,15 @@ All notable changes to this project will be tracked here.
 - JSON access logging (`msg=access`) on stdout with `request_id`, `route_name`, `method`, `path`, `status`, `duration_ms`, and `ts`; headers are not logged. Global middleware on the chi router plus `NamedRoute` for config route names and admin endpoints.
 - Per-route upstream timeouts with `504` timeout mapping, `502` upstream failure mapping, and error bodies that include the request ID.
 - In-memory per-route rate limiting with `429` responses, request ID propagation on throttled responses, and health endpoint exemption.
+- Prometheus-style `/metrics` endpoint with request count, latency histogram, status visibility, and explicit rate-limit-denied metrics.
 - Redis-backed per-route rate limiting selected by config (`redis.enabled`), including fixed-window enforcement and startup validation for `redis.addr`.
 - Integration and unit coverage for Redis limiter behavior, Redis-unavailable fallback (`503`), and shared-limit behavior across router instances.
 - `deployments/docker-compose.yml` for local gateway + echo upstream + Redis startup.
+- `GET /debug/routes` JSON debug endpoint listing route names, paths, methods, timeouts, rate-limit policy, and sanitized upstream targets (`upstream_scheme` / `upstream_host` only, no userinfo or path); Redis `addr` only when `redis.enabled` is true.
+- **T13 — Demo / docs:** Expanded README (overview, stack, quick start, config table, layout, dev commands, TEST_PLAN demo table, troubleshooting). `configs/gateway.dev.yaml` defaults **`redis.enabled: false`** so local runs work without Redis; **`configs/gateway.docker.yaml`** + compose use Redis and service hostnames. **`scripts/smoke.sh`** runs `go build`, `go vet`, `go test`. **`.env.example`** notes no env vars; **`examples/README.md`** points to echo upstream.
 
 ### Changed
-- None yet.
+- `deployments/docker-compose.yml` gateway now uses `configs/gateway.docker.yaml`.
 
 ### Fixed
 - None yet.
