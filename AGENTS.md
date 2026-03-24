@@ -184,3 +184,31 @@ Do not:
 - invent features not requested
 - silently change product behavior
 - skip reporting what changed
+
+## Cursor Cloud specific instructions
+
+### Services overview
+
+This is a pure Go project (Go 1.24.0) with two runnable services:
+
+| Service | Command | Default Port |
+|---|---|---|
+| API Gateway | `go run ./cmd/gateway -config configs/gateway.dev.yaml` | 8080 |
+| Echo Upstream (fixture) | `go run ./examples/echo-upstream` | 9091 |
+
+Start the echo upstream **before** the gateway so proxy routes have something to forward to.
+
+### Standard commands
+
+See `README.md` for full details. Quick reference:
+
+- **Build:** `go build ./...`
+- **Test:** `go test ./...`
+- **Lint:** `go vet ./...`
+- **Live demo:** `curl http://127.0.0.1:8080/healthz` (gateway), `curl http://127.0.0.1:8080/api/echo/hello` (proxy)
+
+### Notes
+
+- No external services (Docker, Redis, databases) are required. Redis is disabled in `configs/gateway.dev.yaml` and the in-memory rate limiter works standalone.
+- The gateway exits immediately with a clear error if the config file is invalid — useful for testing config validation.
+- Tests are fully self-contained (no network or external service dependencies). All tests complete in under 1 second.
