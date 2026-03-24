@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+redis:
+  enabled: false
+  addr: localhost:6379
+
+routes:
+  - name: echo
+    path_prefix: /api/echo
+    strip_prefix: /api/echo
+    timeout_ms: 3000
+    rate_limit:
+      enabled: false
+      requests: 5
+      window_seconds: 60
+      key_strategy: ip
+    methods:
+      - GET
+    upstream: http://localhost:9091
