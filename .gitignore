@@ -1,0 +1,25 @@
+# IDE
+.cursor/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Binaries
+/bin/
+*.exe
+*.out
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal docs
+AGENTS.md
+PRD.md
+TASKS.md
+TEST_PLAN.md
